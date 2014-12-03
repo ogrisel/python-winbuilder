@@ -1,0 +1,3 @@
+# Test requirements that should be useful for many Python projects and
+# hence that are worth pre-installing in the base docker image.
+nose
