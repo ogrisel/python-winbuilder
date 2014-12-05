@@ -6,6 +6,7 @@ from subprocess import check_output
 import yaml
 import time
 import tarfile
+import shutil
 try:
     from urllib.request import urlretrieve
 except ImportError:
@@ -122,18 +123,27 @@ def install_mingw(mingw_home, mingw_version="2014-11", arch="64",
     # XXX: This function only works under Python 3.3+ that has native support
     # for extracting .tar.xz archives with the LZMA compression library.
     if sys.platform == 'win32':
-        local_mingw_folder = mingw_home
+        mingwn_home_path = mingw_home
     else:
-        local_mingw_folder = run(['winepath', mingw_home],
-                                 env=env).decode('utf-8').strip()
-    if not op.exists(local_mingw_folder):
-        mingwn_filepath = download_mingw(
+        # Under Linux, compute the Linux path from the virtual windows path
+        mingwn_home_path = run(['winepath', mingw_home],
+                               env=env).decode('utf-8').strip()
+    if not op.exists(mingwn_home_path):
+        mingw_filepath = download_mingw(
             mingw_version=mingw_version, arch=arch,
             download_folder=download_folder)
 
-        print("Extracting %s..." % mingwn_filepath)
-        with tarfile.open(mingwn_filepath) as f:
-            f.extractall('.')
+        tmp_mingw_folder = op.join(download_folder, 'mingw%sstatic' % arch)
+        if not op.exists(tmp_mingw_folder):
+            print("Extracting %s..." % mingw_filepath)
+            with tarfile.open(mingw_filepath) as f:
+                f.extractall(download_folder)
+        print("Installing mingwn to %s..." % mingw_home)
+        shutil.move(tmp_mingw_folder, mingwn_home_path)
+
+
+def congigure_mingw(mingw_home, python_home, arch, env=None):
+    pass
 
 
 def make_wine_env(python_version, python_arch, wine_prefix_root='.'):
@@ -162,6 +172,8 @@ if __name__ == "__main__":
         install_mingw(mingw_home, arch=python_arch,
                       download_folder='.', env=env)
         set_env(u'PATH', make_path(python_home, mingw_home), env=env)
+        congigure_mingw(mingw_home, python_home, python_arch, env=env)
 
-        # Sanity check to make sure that python is in the PATH
+        # Sanity check to make sure that python and gcc are in the PATH
         run(['python', '--version'], env=env)
+        run(['gcc', '--version'], env=env)
