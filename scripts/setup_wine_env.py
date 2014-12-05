@@ -17,6 +17,7 @@ WINEPREFIX_PATTERN = 'wine-py{version}-{arch}'
 PYTHON_MSI_PATTERN = "python-{version}{arch_marker}.msi"
 PYTHON_URL_PATTERN = ("https://www.python.org/ftp/python/{version}/"
                       + PYTHON_MSI_PATTERN)
+GCC_VERSION = '4.9.2'
 MINGW_FILE_PATTERN = "mingw{arch}static-{version}.tar.xz"
 MINGW_URL_PATTERN = ("https://bitbucket.org/carlkl/mingw-w64-for-python/"
                      "downloads/" + MINGW_FILE_PATTERN)
@@ -118,17 +119,20 @@ def download_mingw(mingw_version="2014-11", arch="64", download_folder='.'):
     return filepath
 
 
+def normalize_win_path(win_path):
+    if sys.platform == 'win32':
+        # Nothing to do under Windows
+        return win_path
+    # Under Linux, compute the Linux path from the virtual windows path
+    return run(['winepath', win_path], env=env).decode('utf-8').strip()
+
+
 def install_mingw(mingw_home, mingw_version="2014-11", arch="64",
                   download_folder='.', env=None):
     # XXX: This function only works under Python 3.3+ that has native support
     # for extracting .tar.xz archives with the LZMA compression library.
-    if sys.platform == 'win32':
-        mingwn_home_path = mingw_home
-    else:
-        # Under Linux, compute the Linux path from the virtual windows path
-        mingwn_home_path = run(['winepath', mingw_home],
-                               env=env).decode('utf-8').strip()
-    if not op.exists(mingwn_home_path):
+    mingw_home_path = normalize_win_path(mingw_home)
+    if not op.exists(mingw_home_path):
         mingw_filepath = download_mingw(
             mingw_version=mingw_version, arch=arch,
             download_folder=download_folder)
@@ -138,17 +142,62 @@ def install_mingw(mingw_home, mingw_version="2014-11", arch="64",
             print("Extracting %s..." % mingw_filepath)
             with tarfile.open(mingw_filepath) as f:
                 f.extractall(download_folder)
-        print("Installing mingwn to %s..." % mingw_home)
-        shutil.move(tmp_mingw_folder, mingwn_home_path)
+        print("Installing mingw to %s..." % mingw_home)
+        shutil.move(tmp_mingw_folder, mingw_home_path)
 
 
-def congigure_mingw(mingw_home, python_home, arch, env=None):
-    pass
+def congigure_mingw(mingw_home, python_home, python_version, arch, env=None):
+    mingw_home_path = normalize_win_path(mingw_home)
+    python_home_path = normalize_win_path(python_home)
+    v_major, v_minor = tuple(int(x) for x in python_version.split('.')[:2])
+    cwd_orig = os.getcwd()
+
+    # Generate the libpythonXX.dll.a archive
+    dlla_name = 'libpython%d%d.dll.a' % (v_major, v_minor)
+    dlla_path = op.join(python_home_path, 'libs', dlla_name)
+    if not op.exists(dlla_path):
+        print('Generating %s from %s' % (dlla_name, python_home))
+        dll_name = 'python%d%d.dll' % (v_major, v_minor)
+        def_name = 'python%d%d.def' % (v_major, v_minor)
+        try:
+            os.chdir(python_home_path)
+            run(['gendef', dll_name], env=env)
+            run(['dlltool', '-D', dll_name, '-d', def_name, '-l', dlla_name],
+                env=env)
+            print("Moving %s to %s" % (dlla_name, dlla_path))
+            shutil.move(dlla_name, dlla_path)
+        finally:
+            os.chdir(cwd_orig)
+
+    # Use the correct MSVC runtime depending on the arch and the Python version
+    if arch == '64':
+        arch_folder = 'x86_64-w64-mingw32'
+    elif arch == '32':
+        arch_folder = 'i686-w64-mingw32'
+    vc_tag = '100' if v_major == 3 else '90'
+    libmsvcr = 'libmsvcr%s.a' % vc_tag
+    specs = 'specs%s' % vc_tag
+
+    # Copy the msvc runtime library
+    libmsvcr_path = op.join(mingw_home_path, arch_folder, 'lib', libmsvcr)
+    libs_folder = op.join(python_home_path, 'libs')
+    print('Copying %s to %s' % (libmsvcr_path, libs_folder))
+    shutil.copy2(libmsvcr_path, libs_folder)
+
+    # Configure the msvc runtime specs file
+    specs_folder = op.join(mingw_home_path, 'lib', 'gcc', arch_folder,
+                           GCC_VERSION)
+    specs_source_path = op.join(specs_folder, specs)
+    specs_target_path = op.join(specs_folder, 'specs')
+    print('Copying %s to %s' % (specs_source_path, specs_target_path))
+    shutil.copy2(specs_source_path, specs_target_path)
 
 
 def make_wine_env(python_version, python_arch, wine_prefix_root='.'):
     """Set the wineprefix environment"""
     wine_prefix_root = op.abspath(wine_prefix_root)
+    if not op.exists(wine_prefix_root):
+        os.makedirs(wine_prefix_root)
     env = os.environ.copy()
     if sys.platform != 'win32':
         wine_prefix = WINEPREFIX_PATTERN.format(
@@ -167,12 +216,14 @@ if __name__ == "__main__":
         python_arch = environment['python_arch']
         mingw_home = environment['mingw_home']
 
-        env = make_wine_env(python_version, python_arch)
+        env = make_wine_env(python_version, python_arch,
+                            wine_prefix_root='/wine')
         install_python(python_home, python_version, python_arch, env=env)
         install_mingw(mingw_home, arch=python_arch,
                       download_folder='.', env=env)
         set_env(u'PATH', make_path(python_home, mingw_home), env=env)
-        congigure_mingw(mingw_home, python_home, python_arch, env=env)
+        congigure_mingw(mingw_home, python_home, python_version, python_arch,
+                        env=env)
 
         # Sanity check to make sure that python and gcc are in the PATH
         run(['python', '--version'], env=env)
