@@ -5,16 +5,20 @@ import sys
 from subprocess import check_output
 import yaml
 import time
+import tarfile
 try:
     from urllib.request import urlretrieve
 except ImportError:
     # Python 2 compat
     from urllib2 import urlretrieve
 
-WINEPREFIX_PATTERN = '/wine-py{version}-{arch}'
+WINEPREFIX_PATTERN = 'wine-py{version}-{arch}'
 PYTHON_MSI_PATTERN = "python-{version}{arch_marker}.msi"
 PYTHON_URL_PATTERN = ("https://www.python.org/ftp/python/{version}/"
                       + PYTHON_MSI_PATTERN)
+MINGW_FILE_PATTERN = "mingw{arch}static-{version}.tar.xz"
+MINGW_URL_PATTERN = ("https://bitbucket.org/carlkl/mingw-w64-for-python/"
+                     "downloads/" + MINGW_FILE_PATTERN)
 
 ENV_REGISTRY_KEY = (rb"[HKEY_CURRENT_USER\Environment]")
 
@@ -65,7 +69,7 @@ def make_path(python_home, mingw_home):
     return ";".join([python_path, mingw_path])
 
 
-def download_python(version, arch, env=None):
+def download_python(version, arch, download_folder='.', env=None):
     if arch == "32":
         arch_marker = ""
     elif arch == "64":
@@ -76,38 +80,70 @@ def download_python(version, arch, env=None):
     url = PYTHON_URL_PATTERN.format(version=version, arch_marker=arch_marker)
     filename = PYTHON_MSI_PATTERN.format(
         version=version, arch_marker=arch_marker)
-    if not op.exists(filename):
-        print("Downloading %s to %s" % (url, filename))
-        urlretrieve(url, filename)
-    return filename
+    filepath = op.join(download_folder, filename)
+    if not op.exists(filepath):
+        print("Downloading %s to %s" % (url, filepath))
+        urlretrieve(url, filepath)
+    return filepath
 
 
-def install_python(python_home, version, arch, env=None):
+def install_python(python_home, version, arch, download_folder='.', env=None):
     if sys.platform == 'win32':
         local_python_folder = python_home
     else:
         local_python_folder = run(['winepath', python_home],
                                   env=env).decode('utf-8').strip()
     if not op.exists(local_python_folder):
-        python_msi_filename = download_python(version, arch)
+        python_msi_filepath = download_python(version, arch)
+
+        if sys.platform != 'win32':
+            python_msi_filepath = run(['winepath', python_msi_filepath],
+                                      env=env).decode('utf-8').strip()
+
         print('Installing Python %s (%s bit) to %s' % (
             version, arch, python_home))
-        command = ['msiexec', '/qn', '/i', python_msi_filename,
+        command = ['msiexec', '/qn', '/i', python_msi_filepath,
                    '/log', 'msi_install.log', 'TARGETDIR=%s' % python_home]
         run(command, env=env)
 
 
-def install_mingw(mingw_home, arch):
-    pass
+def download_mingw(mingw_version="2014-11", arch="64", download_folder='.'):
+    filename = MINGW_FILE_PATTERN.format(arch=arch, version=mingw_version)
+    url = MINGW_URL_PATTERN.format(arch=arch, version=mingw_version)
+    filepath = op.join(download_folder, filename)
+    if not op.exists(filepath):
+        print("Downloading %s to %s" % (url, filepath))
+        urlretrieve(url, filepath)
+    return filepath
 
 
-def make_wine_env(python_version, python_arch):
+def install_mingw(mingw_home, mingw_version="2014-11", arch="64",
+                  download_folder='.', env=None):
+    # XXX: This function only works under Python 3.3+ that has native support
+    # for extracting .tar.xz archives with the LZMA compression library.
+    if sys.platform == 'win32':
+        local_mingw_folder = mingw_home
+    else:
+        local_mingw_folder = run(['winepath', mingw_home],
+                                 env=env).decode('utf-8').strip()
+    if not op.exists(local_mingw_folder):
+        mingwn_filepath = download_mingw(
+            mingw_version=mingw_version, arch=arch,
+            download_folder=download_folder)
+
+        print("Extracting %s..." % mingwn_filepath)
+        with tarfile.open(mingwn_filepath) as f:
+            f.extractall('.')
+
+
+def make_wine_env(python_version, python_arch, wine_prefix_root='.'):
     """Set the wineprefix environment"""
+    wine_prefix_root = op.abspath(wine_prefix_root)
     env = os.environ.copy()
     if sys.platform != 'win32':
         wine_prefix = WINEPREFIX_PATTERN.format(
             version=python_version, arch=python_arch)
-        env['WINEPREFIX'] = wine_prefix
+        env['WINEPREFIX'] = op.join(wine_prefix_root, wine_prefix)
     return env
 
 
@@ -123,6 +159,8 @@ if __name__ == "__main__":
 
         env = make_wine_env(python_version, python_arch)
         install_python(python_home, python_version, python_arch, env=env)
+        install_mingw(mingw_home, arch=python_arch,
+                      download_folder='.', env=env)
         set_env(u'PATH', make_path(python_home, mingw_home), env=env)
 
         # Sanity check to make sure that python is in the PATH

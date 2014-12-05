@@ -3,6 +3,9 @@
 FROM ubuntu:trusty
 MAINTAINER Olivier Grisel <olivier.grisel@ensta.org>
 
+WORKDIR /root
+USER root
+
 RUN dpkg --add-architecture i386
 RUN apt-get update -y -qq
 RUN apt-get install -y software-properties-common
@@ -19,6 +22,6 @@ RUN python3.4 -m pip install pyyaml
 
 RUN apt-get install -y wine
 
-ADD scripts/setup_wine_env.py setup_wine_env.py
-ADD python_winbuilder.yml python_winbuilder.yml
+ADD scripts/setup_wine_env.py /root/setup_wine_env.py
+ADD python_winbuilder.yml /root/python_winbuilder.yml
 RUN python3.4 setup_wine_env.py python_winbuilder.yml
