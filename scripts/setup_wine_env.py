@@ -3,7 +3,6 @@ import os.path as op
 import os
 import sys
 from subprocess import check_output
-import yaml
 import time
 import tarfile
 import shutil
@@ -82,6 +81,8 @@ def download_python(version, arch, download_folder='.', env=None):
     url = PYTHON_URL_PATTERN.format(version=version, arch_marker=arch_marker)
     filename = PYTHON_MSI_PATTERN.format(
         version=version, arch_marker=arch_marker)
+    if not op.exists(download_folder):
+        os.makedirs(download_folder)
     filepath = op.join(download_folder, filename)
     if not op.exists(filepath):
         print("Downloading %s to %s" % (url, filepath))
@@ -96,7 +97,8 @@ def install_python(python_home, version, arch, download_folder='.', env=None):
         local_python_folder = run(['winepath', python_home],
                                   env=env).decode('utf-8').strip()
     if not op.exists(local_python_folder):
-        python_msi_filepath = download_python(version, arch)
+        python_msi_filepath = download_python(version, arch,
+                                              download_folder=download_folder)
 
         if sys.platform != 'win32':
             python_msi_filepath = run(['winepath', python_msi_filepath],
@@ -112,6 +114,8 @@ def install_python(python_home, version, arch, download_folder='.', env=None):
 def download_mingw(mingw_version="2014-11", arch="64", download_folder='.'):
     filename = MINGW_FILE_PATTERN.format(arch=arch, version=mingw_version)
     url = MINGW_URL_PATTERN.format(arch=arch, version=mingw_version)
+    if not op.exists(download_folder):
+        os.makedirs(download_folder)
     filepath = op.join(download_folder, filename)
     if not op.exists(filepath):
         print("Downloading %s to %s" % (url, filepath))
@@ -119,7 +123,7 @@ def download_mingw(mingw_version="2014-11", arch="64", download_folder='.'):
     return filepath
 
 
-def normalize_win_path(win_path):
+def normalize_win_path(win_path, env=None):
     if sys.platform == 'win32':
         # Nothing to do under Windows
         return win_path
@@ -131,7 +135,7 @@ def install_mingw(mingw_home, mingw_version="2014-11", arch="64",
                   download_folder='.', env=None):
     # XXX: This function only works under Python 3.3+ that has native support
     # for extracting .tar.xz archives with the LZMA compression library.
-    mingw_home_path = normalize_win_path(mingw_home)
+    mingw_home_path = normalize_win_path(mingw_home, env=env)
     if not op.exists(mingw_home_path):
         mingw_filepath = download_mingw(
             mingw_version=mingw_version, arch=arch,
@@ -147,8 +151,8 @@ def install_mingw(mingw_home, mingw_version="2014-11", arch="64",
 
 
 def congigure_mingw(mingw_home, python_home, python_version, arch, env=None):
-    mingw_home_path = normalize_win_path(mingw_home)
-    python_home_path = normalize_win_path(python_home)
+    mingw_home_path = normalize_win_path(mingw_home, env=env)
+    python_home_path = normalize_win_path(python_home, env=env)
     v_major, v_minor = tuple(int(x) for x in python_version.split('.')[:2])
     cwd_orig = os.getcwd()
 
@@ -206,25 +210,47 @@ def make_wine_env(python_version, python_arch, wine_prefix_root='.'):
     return env
 
 
+def setup_wine_env(python_home, python_version, python_arch,
+                   wine_prefix_root='wine', download_folder='download'):
+    env = make_wine_env(python_version, python_arch,
+                        wine_prefix_root=wine_prefix_root)
+    install_python(python_home, python_version, python_arch,
+                   download_folder=download_folder, env=env)
+    install_mingw(mingw_home, arch=python_arch,
+                  download_folder=download_folder, env=env)
+    set_env(u'PATH', make_path(python_home, mingw_home), env=env)
+    congigure_mingw(mingw_home, python_home, python_version, python_arch,
+                    env=env)
+    # Sanity check to make sure that python and gcc are in the PATH
+    run(['python', '--version'], env=env)
+    run(['gcc', '--version'], env=env)
+
+
 if __name__ == "__main__":
-    with open(sys.argv[1]) as f:
-        config = yaml.load(f)
-    environments = config.get('environments', ())
-    for environment in environments:
-        python_home = environment['python_home']
-        python_version = environment['python_version']
-        python_arch = environment['python_arch']
-        mingw_home = environment['mingw_home']
+    if len(sys.argv) > 1:
+        import yaml
+        with open(sys.argv[1]) as f:
+            config = yaml.load(f)
+        wine_prefix_root = config.get('wine_prefix_root', 'wine')
+        environments = config.get('environments', ())
+        for environment in environments:
+            python_home = environment['python_home']
+            python_version = environment['python_version']
+            python_arch = environment['python_arch']
+            mingw_home = environment['mingw_home']
 
-        env = make_wine_env(python_version, python_arch,
-                            wine_prefix_root='/wine')
-        install_python(python_home, python_version, python_arch, env=env)
-        install_mingw(mingw_home, arch=python_arch,
-                      download_folder='.', env=env)
-        set_env(u'PATH', make_path(python_home, mingw_home), env=env)
-        congigure_mingw(mingw_home, python_home, python_version, python_arch,
-                        env=env)
+            setup_wine_env(python_home, python_version, python_arch,
+                           wine_prefix_root=wine_prefix_root,
+                           download_folder=wine_prefix_root)
 
-        # Sanity check to make sure that python and gcc are in the PATH
-        run(['python', '--version'], env=env)
-        run(['gcc', '--version'], env=env)
+    else:
+        # Perform one setup using environment variables
+        python_home = os.environ['PY_HOME']
+        python_version = os.environ['PY_VERSION']
+        python_arch = os.environ['ARCH']
+        mingw_home = os.environ['MINGW_HOME']
+        wine_prefix_root = os.environ['WINE_ROOT']
+
+        setup_wine_env(python_home, python_version, python_arch,
+                       wine_prefix_root=wine_prefix_root,
+                       download_folder=wine_prefix_root)

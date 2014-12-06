@@ -1,3 +1,5 @@
+wine_prefix_root: "/wine"
+
 environments:
     - python_home: "C:\\Python27"
       python_version: "2.7.8"

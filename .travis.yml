@@ -1,0 +1,22 @@
+language: python
+python:
+    - "3.4"
+env:
+  matrix:
+    - PY_HOME="C:\\Python27" PY_VERSION="2.7.8" ARCH="32" MINGW_HOME="C:\\mingw"
+install:
+    - sudo apt-get update -y -qq
+    - sudo apt-get install -y wine
+    - export WINE_ROOT=$HOME/wine
+    - mkdir -p $WINE_ROOT
+    - export WINEPREFIX="$WINE_ROOT/wine-py$PY_VERSION-$ARCH"
+    - python3.4 scripts/setup_wine_env.py
+script:
+    - wine python --version
+    - wine gcc --version
+after_success:
+    - du -hs $WINE_ROOT/*
+cache:
+    apt: true
+    directories:
+        - $WINE_ROOT
