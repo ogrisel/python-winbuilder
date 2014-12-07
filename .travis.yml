@@ -4,6 +4,11 @@ python:
 env:
   matrix:
     - PY_HOME="C:\\Python27" PY_VERSION="2.7.8" ARCH="32" MINGW_HOME="C:\\mingw"
+    - PY_HOME="C:\\Python33" PY_VERSION="3.3.5" ARCH="32" MINGW_HOME="C:\\mingw"
+    - PY_HOME="C:\\Python34" PY_VERSION="3.4.2" ARCH="32" MINGW_HOME="C:\\mingw"
+    - PY_HOME="C:\\Python27" PY_VERSION="2.7.8" ARCH="64" MINGW_HOME="C:\\mingw"
+    - PY_HOME="C:\\Python33" PY_VERSION="3.3.5" ARCH="64" MINGW_HOME="C:\\mingw"
+    - PY_HOME="C:\\Python34" PY_VERSION="3.4.2" ARCH="64" MINGW_HOME="C:\\mingw"
 install:
     - sudo apt-get update -y -qq
     - sudo apt-get install -y wine
