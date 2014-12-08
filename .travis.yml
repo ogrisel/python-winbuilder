@@ -3,7 +3,7 @@ python:
     - "3.4"
 env:
   global:
-    - DOWNLOAD_FOLDER="$HOME"/downloads
+    - DOWNLOAD_FOLDER="$HOME/downloads"
   matrix:
     - PY_HOME="C:\\Python27" PY_VERSION="2.7.8" ARCH="32" MINGW_HOME="C:\\mingw"
     - PY_HOME="C:\\Python33" PY_VERSION="3.3.5" ARCH="32" MINGW_HOME="C:\\mingw"
@@ -14,16 +14,13 @@ env:
 install:
     - sudo apt-get update -y -qq
     - sudo apt-get install -y wine
-    - export WINE_ROOT=$HOME/wine
-    - mkdir -p $WINE_ROOT
     - mkdir -p $DOWNLOAD_FOLDER
-    - export WINEPREFIX="$WINE_ROOT/wine-py$PY_VERSION-$ARCH"
     - python3.4 scripts/setup_wine_env.py
 script:
     - wine python --version
     - wine gcc --version
 after_success:
-    - du -hs $WINE_ROOT/*
+    - du -hs $DOWNLOAD_FOLDER/*
 cache:
     apt: true
     directories:

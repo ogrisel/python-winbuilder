@@ -53,7 +53,10 @@ def set_env(attribute, value, env=None):
 
     # XXX [hackish]: Wait for regedit to apply those updates
     print("Waiting for registry to get updated...")
-    user_reg = op.join(env['WINEPREFIX'], 'user.reg')
+    if env is None or 'WINEPREFIX' not in env:
+        user_reg = op.expanduser(op.join('~', '.wine', 'user.reg'))
+    else:
+        user_reg = op.join(env['WINEPREFIX'], 'user.reg')
     for i in range(100):
         if op.exists(user_reg):
             with open(user_reg, 'rb') as f:
@@ -197,8 +200,11 @@ def congigure_mingw(mingw_home, python_home, python_version, arch, env=None):
     shutil.copy2(specs_source_path, specs_target_path)
 
 
-def make_wine_env(python_version, python_arch, wine_prefix_root='.'):
+def make_wine_env(python_version, python_arch, wine_prefix_root=None):
     """Set the wineprefix environment"""
+    if wine_prefix_root is None:
+        # Assume that WINEPREFIX is defined externally if needed.
+        return None
     wine_prefix_root = op.abspath(wine_prefix_root)
     if not op.exists(wine_prefix_root):
         os.makedirs(wine_prefix_root)
@@ -211,7 +217,7 @@ def make_wine_env(python_version, python_arch, wine_prefix_root='.'):
 
 
 def setup_wine_env(python_home, python_version, python_arch,
-                   wine_prefix_root='wine', download_folder='download'):
+                   wine_prefix_root=None, download_folder='downloads'):
     env = make_wine_env(python_version, python_arch,
                         wine_prefix_root=wine_prefix_root)
     install_python(python_home, python_version, python_arch,
@@ -228,6 +234,8 @@ def setup_wine_env(python_home, python_version, python_arch,
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
+        # Setup one isolated WINEPREFIX install per configuration
+        # provided in a YAML formatted specification.
         import yaml
         with open(sys.argv[1]) as f:
             config = yaml.load(f)
@@ -238,20 +246,18 @@ if __name__ == "__main__":
             python_version = environment['python_version']
             python_arch = environment['python_arch']
             mingw_home = environment['mingw_home']
-
             setup_wine_env(python_home, python_version, python_arch,
                            wine_prefix_root=wine_prefix_root,
                            download_folder=wine_prefix_root)
 
     else:
-        # Perform one setup using environment variables
+        # Perform one setup using environment variables. The WINEPREFIX
+        # environment variable should be defined externally if needed.
         python_home = os.environ['PY_HOME']
         python_version = os.environ['PY_VERSION']
         python_arch = os.environ['ARCH']
         mingw_home = os.environ['MINGW_HOME']
-        wine_prefix_root = os.environ['WINE_ROOT']
         download_folder = os.environ.get('DOWNLOAD_FOLDER', '.')
 
         setup_wine_env(python_home, python_version, python_arch,
-                       wine_prefix_root=wine_prefix_root,
                        download_folder=download_folder)
