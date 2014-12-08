@@ -215,17 +215,26 @@ def configure_mingw(mingw_home, python_home, python_version, arch, env=None):
 
 def make_wine_env(python_version, python_arch, wine_prefix_root=None):
     """Set the wineprefix environment"""
-    if wine_prefix_root is None:
-        # Assume that WINEPREFIX is defined externally if needed.
-        return None
-    wine_prefix_root = op.abspath(wine_prefix_root)
-    if not op.exists(wine_prefix_root):
-        os.makedirs(wine_prefix_root)
     env = os.environ.copy()
-    if sys.platform != 'win32':
+    if sys.platform == 'win32':
+        # Do nothing under Windows
+        return env
+
+    if wine_prefix_root is not None:
+        wine_prefix_root = op.abspath(wine_prefix_root)
+        if not op.exists(wine_prefix_root):
+            os.makedirs(wine_prefix_root)
         wine_prefix = WINEPREFIX_PATTERN.format(
             version=python_version, arch=python_arch)
         env['WINEPREFIX'] = op.join(wine_prefix_root, wine_prefix)
+
+    if python_arch == '32':
+        # wine 64 has many bugs when running 32 bit apps, better force the
+        # creation of a wine 32 prefix
+        env['WINEARCH'] = 'win32'
+
+    # Initialize the wineprefix
+    run(['winecfg'], env=env)
     return env
 
 
