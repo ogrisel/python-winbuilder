@@ -250,7 +250,8 @@ if __name__ == "__main__":
         python_arch = os.environ['ARCH']
         mingw_home = os.environ['MINGW_HOME']
         wine_prefix_root = os.environ['WINE_ROOT']
+        download_folder = os.environ.get('DOWNLOAD_FOLDER', '.')
 
         setup_wine_env(python_home, python_version, python_arch,
                        wine_prefix_root=wine_prefix_root,
-                       download_folder=wine_prefix_root)
+                       download_folder=download_folder)
