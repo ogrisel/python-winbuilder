@@ -16,6 +16,8 @@ WINEPREFIX_PATTERN = 'wine-py{version}-{arch}'
 PYTHON_MSI_PATTERN = "python-{version}{arch_marker}.msi"
 PYTHON_URL_PATTERN = ("https://www.python.org/ftp/python/{version}/"
                       + PYTHON_MSI_PATTERN)
+GET_PIP_SCRIPT = 'get-pip.py'
+GET_PIP_URL = "https://bootstrap.pypa.io/get-pip.py"
 GCC_VERSION = '4.9.2'
 MINGW_FILE_PATTERN = "mingw{arch}static-{version}.tar.xz"
 MINGW_URL_PATTERN = ("https://bitbucket.org/carlkl/mingw-w64-for-python/"
@@ -103,15 +105,26 @@ def install_python(python_home, version, arch, download_folder='.', env=None):
         python_msi_filepath = download_python(version, arch,
                                               download_folder=download_folder)
 
+        # Install the Python MSI
+        print('Installing Python %s (%s bit) to %s' % (
+            version, arch, python_home))
         if sys.platform != 'win32':
             python_msi_filepath = run(['winepath', python_msi_filepath],
                                       env=env).decode('utf-8').strip()
-
-        print('Installing Python %s (%s bit) to %s' % (
-            version, arch, python_home))
         command = ['msiexec', '/qn', '/i', python_msi_filepath,
                    '/log', 'msi_install.log', 'TARGETDIR=%s' % python_home]
         run(command, env=env)
+
+        # Install pip
+        getpip_filepath = op.join(download_folder, GET_PIP_SCRIPT)
+        if not op.exists(getpip_filepath):
+            print("Downloading %s to %s" % (GET_PIP_URL, getpip_filepath))
+            urlretrieve(GET_PIP_URL, getpip_filepath)
+
+        if sys.platform != 'win32':
+            getpip_filepath = run(['winepath', getpip_filepath],
+                                  env=env).decode('utf-8').strip()
+        run([python_home + '\\python', getpip_filepath], env=env)
 
 
 def download_mingw(mingw_version="2014-11", arch="64", download_folder='.'):
