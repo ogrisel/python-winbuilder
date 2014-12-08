@@ -12,6 +12,7 @@ env:
     - PY_HOME="C:\\Python33" PY_VERSION="3.3.5" ARCH="64" MINGW_HOME="C:\\mingw"
     - PY_HOME="C:\\Python34" PY_VERSION="3.4.2" ARCH="64" MINGW_HOME="C:\\mingw"
 install:
+    - sudo add-apt-repository ppa:ubuntu-wine/ppa -y
     - sudo apt-get update -y -qq
     - sudo apt-get install -y wine
     - mkdir -p $DOWNLOAD_FOLDER
