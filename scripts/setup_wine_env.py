@@ -25,6 +25,11 @@ MINGW_URL_PATTERN = ("https://bitbucket.org/carlkl/mingw-w64-for-python/"
 
 ENV_REGISTRY_KEY = (rb"[HKEY_CURRENT_USER\Environment]")
 
+DISTUTILS_CFG_CONTENT = u"""\
+[build]
+compiler=mingw32
+"""
+
 
 def run(command, *args, prepend_wine='auto', **kwargs):
     """Execute a windows command (using wine under Linux)"""
@@ -47,8 +52,10 @@ def windows_path(path, env=None):
     if sys.platform == 'win32':
         # Nothing to do under Windows
         return path
-    # Under Linux, compute the virtual Windows path from the concrete Linux path
-    return run(['winepath', '--windows', path], env=env).decode('utf-8').strip()
+    # Under Linux, compute the virtual Windows path from the concrete Linux
+    # path
+    return run(['winepath', '--windows', path],
+               env=env).decode('utf-8').strip()
 
 
 def set_env(attribute, value, env=None):
@@ -189,11 +196,21 @@ def configure_mingw(mingw_home, python_home, python_version, arch, env=None):
         finally:
             os.chdir(cwd_orig)
 
+    # Install a disutils.cfg file to select mingw as the default compiler
+    # (useful for pip in particular)
+    distutils_cfg = op.join(python_home_path, 'Lib', 'distutils',
+                            'distutils.cfg')
+    print("Setting mingw as the default compiler in %s" % distutils_cfg)
+    with open(distutils_cfg, 'w') as f:
+        f.write(DISTUTILS_CFG_CONTENT)
+
     # Use the correct MSVC runtime depending on the arch and the Python version
     if arch == '64':
         arch_folder = 'x86_64-w64-mingw32'
     elif arch == '32':
         arch_folder = 'i686-w64-mingw32'
+    else:
+        raise ValueError("Unsupported architecture: %s" % arch)
     vc_tag = '100' if v_major == 3 else '90'
     libmsvcr = 'libmsvcr%s.a' % vc_tag
     specs = 'specs%s' % vc_tag
