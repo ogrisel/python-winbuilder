@@ -35,6 +35,22 @@ def run(command, *args, prepend_wine='auto', **kwargs):
     return check_output(command, *args, stderr=sys.stdout, **kwargs)
 
 
+def unix_path(path, env=None):
+    if sys.platform == 'win32':
+        # Nothing to do under Windows
+        return path
+    # Under Linux, compute the Linux path from the virtual windows path
+    return run(['winepath', '--unix', path], env=env).decode('utf-8').strip()
+
+
+def windows_path(path, env=None):
+    if sys.platform == 'win32':
+        # Nothing to do under Windows
+        return path
+    # Under Linux, compute the virtual Windows path from the concrete Linux path
+    return run(['winepath', '--windows', path], env=env).decode('utf-8').strip()
+
+
 def set_env(attribute, value, env=None):
     """Edit the wine registry to configure an environment variable"""
     print("Setting '%s'='%s'" % (attribute, value))
@@ -96,11 +112,7 @@ def download_python(version, arch, download_folder='.', env=None):
 
 
 def install_python(python_home, version, arch, download_folder='.', env=None):
-    if sys.platform == 'win32':
-        local_python_folder = python_home
-    else:
-        local_python_folder = run(['winepath', python_home],
-                                  env=env).decode('utf-8').strip()
+    local_python_folder = unix_path(python_home, env=env)
     if not op.exists(local_python_folder):
         python_msi_filepath = download_python(version, arch,
                                               download_folder=download_folder)
@@ -108,9 +120,7 @@ def install_python(python_home, version, arch, download_folder='.', env=None):
         # Install the Python MSI
         print('Installing Python %s (%s bit) to %s' % (
             version, arch, python_home))
-        if sys.platform != 'win32':
-            python_msi_filepath = run(['winepath', python_msi_filepath],
-                                      env=env).decode('utf-8').strip()
+        python_msi_filepath = windows_path(python_msi_filepath, env=env)
         command = ['msiexec', '/qn', '/i', python_msi_filepath,
                    '/log', 'msi_install.log', 'TARGETDIR=%s' % python_home]
         run(command, env=env)
@@ -121,9 +131,7 @@ def install_python(python_home, version, arch, download_folder='.', env=None):
             print("Downloading %s to %s" % (GET_PIP_URL, getpip_filepath))
             urlretrieve(GET_PIP_URL, getpip_filepath)
 
-        if sys.platform != 'win32':
-            getpip_filepath = run(['winepath', getpip_filepath],
-                                  env=env).decode('utf-8').strip()
+        getpip_filepath = windows_path(getpip_filepath, env=env)
         run([python_home + '\\python', getpip_filepath], env=env)
 
 
@@ -139,19 +147,11 @@ def download_mingw(mingw_version="2014-11", arch="64", download_folder='.'):
     return filepath
 
 
-def normalize_win_path(win_path, env=None):
-    if sys.platform == 'win32':
-        # Nothing to do under Windows
-        return win_path
-    # Under Linux, compute the Linux path from the virtual windows path
-    return run(['winepath', win_path], env=env).decode('utf-8').strip()
-
-
 def install_mingw(mingw_home, mingw_version="2014-11", arch="64",
                   download_folder='.', env=None):
     # XXX: This function only works under Python 3.3+ that has native support
     # for extracting .tar.xz archives with the LZMA compression library.
-    mingw_home_path = normalize_win_path(mingw_home, env=env)
+    mingw_home_path = unix_path(mingw_home, env=env)
     if not op.exists(mingw_home_path):
         mingw_filepath = download_mingw(
             mingw_version=mingw_version, arch=arch,
@@ -166,9 +166,9 @@ def install_mingw(mingw_home, mingw_version="2014-11", arch="64",
         shutil.move(tmp_mingw_folder, mingw_home_path)
 
 
-def congigure_mingw(mingw_home, python_home, python_version, arch, env=None):
-    mingw_home_path = normalize_win_path(mingw_home, env=env)
-    python_home_path = normalize_win_path(python_home, env=env)
+def configure_mingw(mingw_home, python_home, python_version, arch, env=None):
+    mingw_home_path = unix_path(mingw_home, env=env)
+    python_home_path = unix_path(python_home, env=env)
     v_major, v_minor = tuple(int(x) for x in python_version.split('.')[:2])
     cwd_orig = os.getcwd()
 
@@ -238,7 +238,7 @@ def setup_wine_env(python_home, python_version, python_arch,
     install_mingw(mingw_home, arch=python_arch,
                   download_folder=download_folder, env=env)
     set_env(u'PATH', make_path(python_home, mingw_home), env=env)
-    congigure_mingw(mingw_home, python_home, python_version, python_arch,
+    configure_mingw(mingw_home, python_home, python_version, python_arch,
                     env=env)
     # Sanity check to make sure that python and gcc are in the PATH
     run(['python', '--version'], env=env)
