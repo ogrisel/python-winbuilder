@@ -249,9 +249,6 @@ def make_wine_env(python_version, python_arch, wine_prefix_root=None):
         # wine 64 has many bugs when running 32 bit apps, better force the
         # creation of a wine 32 prefix
         env['WINEARCH'] = 'win32'
-
-    # Initialize the wineprefix
-    run(['winecfg'], env=env)
     return env
 
 
