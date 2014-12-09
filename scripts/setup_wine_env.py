@@ -33,7 +33,6 @@ compiler=mingw32
 ISSUE_4709_PATCH_BEFORE = u"""\
 #define environ (NULL)
 #endif
-
 """
 
 ISSUE_4709_PATCH_MIDDLE = u"""\
@@ -43,7 +42,7 @@ ISSUE_4709_PATCH_MIDDLE = u"""\
    *and* on Win64. For the same reasons, in Python, MS_WIN32 is
    defined on Win32 *and* Win64. Win32 only code must therefore be
    guarded as follows:
-       #if defined(MS_WIN32) && !defined(MS_WIN64)
+   \t#if defined(MS_WIN32) && !defined(MS_WIN64)
    Some modules are disabled on Itanium processors, therefore we
    have MS_WINI64 set for those targets, otherwise MS_WINX64
 */
@@ -54,7 +53,7 @@ ISSUE_4709_PATCH_MIDDLE = u"""\
 
 ISSUE_4709_PATCH_AFTER = u"""\
 
- /* Compiler specific defines */
+/* Compiler specific defines */
 """
 
 ISSUE_4709_PATCH = (
@@ -276,12 +275,12 @@ def fix_issue_4709(python_home, python_version, arch, env=None):
         pyconfig_content = f.read()
 
     # Move the #ifdef block to the new location
-    pyconfig_content.replace(ISSUE_4709_PATCH_MIDDLE, '')
+    patched = pyconfig_content.replace(ISSUE_4709_PATCH_MIDDLE, '')
     insert_location = ISSUE_4709_PATCH_BEFORE + ISSUE_4709_PATCH_AFTER
-    pyconfig_content.replace(insert_location, ISSUE_4709_PATCH)
+    patched = patched.replace(insert_location, ISSUE_4709_PATCH)
 
     with open(pyconfig_filename, 'w') as f:
-        f.write(pyconfig_content)
+        f.write(patched)
 
 
 def make_wine_env(python_version, python_arch, wine_prefix_root=None):
