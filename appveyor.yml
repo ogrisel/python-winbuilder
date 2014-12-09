@@ -1,4 +1,6 @@
 environment:
+  global:
+      MINGW_HOME: "C:\\mingw"
   matrix:
     - PY_HOME: "C:\\Python27"
       PY_VERSION: "2.7.8"
