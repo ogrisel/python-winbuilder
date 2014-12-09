@@ -269,12 +269,11 @@ def fix_issue_4709(python_home, python_version, arch, env=None):
     python_home_path = unix_path(python_home, env=env)
     pyconfig_filename = op.join(python_home_path, 'include', 'pyconfig.h')
 
-    # Poor's man patch
+    # Poor's man patching: move the #ifdef block to the correct location
     print("Patching %s for issue 4709" % pyconfig_filename)
     with open(pyconfig_filename, 'r') as f:
         pyconfig_content = f.read()
 
-    # Move the #ifdef block to the new location
     patched = pyconfig_content.replace(ISSUE_4709_PATCH_MIDDLE, '')
     insert_location = ISSUE_4709_PATCH_BEFORE + ISSUE_4709_PATCH_AFTER
     patched = patched.replace(insert_location, ISSUE_4709_PATCH)
