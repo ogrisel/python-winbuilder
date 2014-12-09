@@ -20,6 +20,8 @@ install:
 script:
     - wine python --version
     - wine gcc --version
+    # Check that the mingw compiler is used by default to build extensions
+    - wine python -m pip install cython
 after_success:
     - du -hs $DOWNLOAD_FOLDER/*
 cache:

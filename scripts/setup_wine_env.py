@@ -30,6 +30,38 @@ DISTUTILS_CFG_CONTENT = u"""\
 compiler=mingw32
 """
 
+ISSUE_4709_PATCH_BEFORE = u"""\
+#define environ (NULL)
+#endif
+
+"""
+
+ISSUE_4709_PATCH_MIDDLE = u"""\
+/* MSVC defines _WINxx to differentiate the windows platform types
+
+   Note that for compatibility reasons _WIN32 is defined on Win32
+   *and* on Win64. For the same reasons, in Python, MS_WIN32 is
+   defined on Win32 *and* Win64. Win32 only code must therefore be
+   guarded as follows:
+       #if defined(MS_WIN32) && !defined(MS_WIN64)
+   Some modules are disabled on Itanium processors, therefore we
+   have MS_WINI64 set for those targets, otherwise MS_WINX64
+*/
+#ifdef _WIN64
+#define MS_WIN64
+#endif
+"""
+
+ISSUE_4709_PATCH_AFTER = u"""\
+
+ /* Compiler specific defines */
+"""
+
+ISSUE_4709_PATCH = (
+    ISSUE_4709_PATCH_BEFORE +
+    ISSUE_4709_PATCH_MIDDLE +
+    ISSUE_4709_PATCH_AFTER
+)
 
 def run(command, *args, prepend_wine='auto', **kwargs):
     """Execute a windows command (using wine under Linux)"""
@@ -230,6 +262,28 @@ def configure_mingw(mingw_home, python_home, python_version, arch, env=None):
     shutil.copy2(specs_source_path, specs_target_path)
 
 
+def fix_issue_4709(python_home, python_version, arch, env=None):
+    # http://bugs.python.org/issue4709
+    if arch == "32" or python_version.startswith('3.'):
+        # Nothing to do
+        return
+    python_home_path = unix_path(python_home, env=env)
+    pyconfig_filename = op.join(python_home_path, 'include', 'pyconfig.h')
+
+    # Poor's man patch
+    print("Patching %s for issue 4709" % pyconfig_filename)
+    with open(pyconfig_filename, 'r') as f:
+        pyconfig_content = f.read()
+
+    # Move the #ifdef block to the new location
+    pyconfig_content.replace(ISSUE_4709_PATCH_MIDDLE, '')
+    insert_location = ISSUE_4709_PATCH_BEFORE + ISSUE_4709_PATCH_AFTER
+    pyconfig_content.replace(insert_location, ISSUE_4709_PATCH)
+
+    with open(pyconfig_filename, 'w') as f:
+        f.write(pyconfig_content)
+
+
 def make_wine_env(python_version, python_arch, wine_prefix_root=None):
     """Set the wineprefix environment"""
     env = os.environ.copy()
@@ -263,6 +317,7 @@ def setup_wine_env(python_home, python_version, python_arch,
     set_env(u'PATH', make_path(python_home, mingw_home), env=env)
     configure_mingw(mingw_home, python_home, python_version, python_arch,
                     env=env)
+    fix_issue_4709(python_home, python_version, python_arch, env=env)
     # Sanity check to make sure that python and gcc are in the PATH
     run(['python', '--version'], env=env)
     run(['gcc', '--version'], env=env)
