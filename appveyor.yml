@@ -1,0 +1,49 @@
+environment:
+  matrix:
+    - PY_HOME: "C:\\Python27"
+      PY_VERSION: "2.7.8"
+      ARCH: "32"
+
+    - PY_HOME: "C:\\Python27-x64"
+      PY_VERSION: "2.7.8"
+      ARCH: "64"
+
+    - PY_HOME: "C:\\Python33"
+      PY_VERSION: "3.3.5"
+      ARCH: "32"
+
+    - PY_HOME: "C:\\Python33-x64"
+      PY_VERSION: "3.3.5"
+      ARCH: "64"
+
+    - PY_HOME: "C:\\Python34"
+      PY_VERSION: "3.4.1"
+      ARCH: "32"
+
+    - PY_HOME: "C:\\Python34-x64"
+      PY_VERSION: "3.4.1"
+      ARCH: "64"
+
+install:
+  # Install the build environment with a script that uses the environment
+  # variables: we use a Python 3.4 to run the script as it needs to uncompress
+  # .tar.xv archives which is not supported in Python 2.7.
+  - "C:\\Python34-x64\\python .\\scripts\\setup_wine_env.py"
+
+build: false  # Not a C# project, build stuff at the test step instead.
+
+test_script:
+  # Python should be in the PATH
+  - "python --version"
+
+  # The mingw compiler should be in the PATH
+  - "gcc --version"
+
+  # Build a project that has a bunch of compiled extensions: the mingw compiler
+  # should be used
+  - "pip install cython"
+
+after_test:
+  # If tests are successful, create a whl package for the project.
+  - "%CMD_IN_ENV% python setup.py bdist_wheel bdist_wininst"
+  - ps: "ls dist"
