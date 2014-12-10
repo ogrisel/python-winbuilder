@@ -27,6 +27,9 @@ environment:
       ARCH: "64"
 
 install:
+  # Set the PATH manually for subsequent CMD commands
+  - "set PATH=%PY_HOME%;%PY_HOME%\\Scripts;%MINGW_HOME\\bin;%PATH%"
+
   # Install the build environment with a script that uses the environment
   # variables: we use a Python 3.4 to run the script as it needs to uncompress
   # .tar.xv archives which is not supported in Python 2.7.

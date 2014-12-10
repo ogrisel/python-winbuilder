@@ -94,7 +94,7 @@ def windows_path(path, env=None):
                env=env).decode('utf-8').strip()
 
 
-def set_env(attribute, value, env):
+def set_env_in_registry(attribute, value, env=None):
     """Edit the wine registry to configure an environment variable"""
     print("Setting '%s'='%s'" % (attribute, value))
 
@@ -112,11 +112,7 @@ def set_env(attribute, value, env):
     command = ['regedit', '/s', filename]
     run(command, env=env, prepend_wine=False)
 
-    if sys.platform == 'win32':
-        # Modify the env of this process, but only under windows otherwise
-        # it breaks wine commands
-        env[attribute] = value
-    else:
+    if sys.platform != 'win32':
         # XXX [hackish]: Wait for regedit to apply those updates under wine
         print("Waiting for registry to get updated...")
         if env is None or 'WINEPREFIX' not in env:
@@ -134,13 +130,10 @@ def set_env(attribute, value, env):
             time.sleep(1)
 
 
-def make_path(python_home, mingw_home, env=None):
-    if env is None:
-        env = os.environ
-    path = env['PATH']
+def make_path(python_home, mingw_home):
     python_path = "{python_home};{python_home}\\Scripts".format(**locals())
     mingw_path = "{mingw_home}\\bin".format(**locals())
-    return ";".join([python_path, mingw_path, path])
+    return ";".join([python_path, mingw_path])
 
 
 def download_python(version, arch, download_folder='.', env=None):
@@ -331,7 +324,10 @@ def setup_wine_env(python_home, python_version, python_arch,
                    download_folder=download_folder, env=env)
     install_mingw(mingw_home, arch=python_arch,
                   download_folder=download_folder, env=env)
-    set_env(u'PATH', make_path(python_home, mingw_home, env=env), env=env)
+    custom_path = make_path(python_home, mingw_home)
+    set_env_in_registry(u'PATH', custom_path, env=env)
+    if sys.platform == 'win32':
+        env['PATH'] = custom_path + ";" + env['PATH']
     configure_mingw(mingw_home, python_home, python_version, python_arch,
                     env=env)
     fix_issue_4709(python_home, python_version, python_arch, env=env)
