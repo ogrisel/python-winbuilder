@@ -3,28 +3,28 @@ environment:
       MINGW_HOME: "C:\\mingw-static"
       DOWNLOAD_FOLDER: "C:\\downloads"
   matrix:
-    - PY_HOME: "C:\\Python27"
+    - PY_HOME: "C:\\Python27-pywinbuilder"
       PY_VERSION: "2.7.8"
       ARCH: "32"
 
-    - PY_HOME: "C:\\Python27-x64"
+    - PY_HOME: "C:\\Python27-x64-pywinbuilder"
       PY_VERSION: "2.7.8"
       ARCH: "64"
 
-    - PY_HOME: "C:\\Python33"
+    - PY_HOME: "C:\\Python33-pywinbuilder"
       PY_VERSION: "3.3.5"
       ARCH: "32"
 
-    - PY_HOME: "C:\\Python33-x64"
+    - PY_HOME: "C:\\Python33-x64-pywinbuilder"
       PY_VERSION: "3.3.5"
       ARCH: "64"
 
-    - PY_HOME: "C:\\Python34"
-      PY_VERSION: "3.4.1"
+    - PY_HOME: "C:\\Python34-pywinbuilder"
+      PY_VERSION: "3.4.2"
       ARCH: "32"
 
-    - PY_HOME: "C:\\Python34-x64"
-      PY_VERSION: "3.4.1"
+    - PY_HOME: "C:\\Python34-x64-pywinbuilder"
+      PY_VERSION: "3.4.2"
       ARCH: "64"
 
 install:
