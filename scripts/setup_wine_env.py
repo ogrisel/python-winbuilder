@@ -23,7 +23,7 @@ MINGW_FILE_PATTERN = "mingw{arch}static-{version}.tar.xz"
 MINGW_URL_PATTERN = ("https://bitbucket.org/carlkl/mingw-w64-for-python/"
                      "downloads/" + MINGW_FILE_PATTERN)
 
-ENV_REGISTRY_KEY = (rb"[HKEY_CURRENT_USER\Environment]")
+ENV_REGISTRY_KEY = rb"[HKEY_CURRENT_USER\Environment]"
 
 DISTUTILS_CFG_CONTENT = u"""\
 [build]
