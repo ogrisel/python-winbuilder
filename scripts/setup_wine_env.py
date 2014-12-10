@@ -325,9 +325,11 @@ def setup_wine_env(python_home, python_version, python_arch,
     install_mingw(mingw_home, arch=python_arch,
                   download_folder=download_folder, env=env)
     custom_path = make_path(python_home, mingw_home)
-    set_env_in_registry(u'PATH', custom_path, env=env)
     if sys.platform == 'win32':
         env['PATH'] = custom_path + ";" + env['PATH']
+    else:
+        # Under wine: use the registry
+        set_env_in_registry(u'PATH', custom_path, env=env)
     configure_mingw(mingw_home, python_home, python_version, python_arch,
                     env=env)
     fix_issue_4709(python_home, python_version, python_arch, env=env)
