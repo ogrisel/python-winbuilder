@@ -33,7 +33,7 @@ install:
   # Install the build environment with a script that uses the environment
   # variables: we use a Python 3.4 to run the script as it needs to uncompress
   # .tar.xv archives which is not supported in Python 2.7.
-  - "C:\\Python34-x64\\python .\\scripts\\setup_wine_env.py"
+  - ps: "C:\\Python34-x64\\python .\\scripts\\setup_wine_env.py"
 
 build: false  # Not a C# project, build stuff at the test step instead.
 
