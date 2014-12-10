@@ -171,6 +171,8 @@ def install_python(python_home, version, arch, download_folder='.', env=None):
         run(command, env=env)
 
         # Install pip
+        if not op.exists(download_folder):
+            os.makedirs(download_folder)
         getpip_filepath = op.join(download_folder, GET_PIP_SCRIPT)
         if not op.exists(getpip_filepath):
             print("Downloading %s to %s" % (GET_PIP_URL, getpip_filepath),
@@ -364,7 +366,7 @@ if __name__ == "__main__":
         python_home = os.environ['PY_HOME']
         python_version = os.environ['PY_VERSION']
         python_arch = os.environ['ARCH']
-        mingw_home = os.environ['MINGW_HOME']
+        mingw_home = os.environ.get('MINGW_HOME', 'C:\\mingw')
         download_folder = os.environ.get('DOWNLOAD_FOLDER', '.')
 
         setup_wine_env(python_home, python_version, python_arch,
