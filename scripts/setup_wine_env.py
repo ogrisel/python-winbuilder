@@ -218,6 +218,8 @@ def configure_mingw(mingw_home, python_home, python_version, arch, env=None):
     v_major, v_minor = tuple(int(x) for x in python_version.split('.')[:2])
     cwd_orig = os.getcwd()
 
+    mingw_bin = mingw_home + "\\bin\\"
+
     # Generate the libpythonXX.dll.a archive
     dlla_name = 'libpython%d%d.dll.a' % (v_major, v_minor)
     dlla_path = op.join(python_home_path, 'libs', dlla_name)
@@ -227,9 +229,9 @@ def configure_mingw(mingw_home, python_home, python_version, arch, env=None):
         def_name = 'python%d%d.def' % (v_major, v_minor)
         try:
             os.chdir(python_home_path)
-            run(['gendef', dll_name], env=env)
-            run(['dlltool', '-D', dll_name, '-d', def_name, '-l', dlla_name],
-                env=env)
+            run([mingw_bin + 'gendef', dll_name], env=env)
+            run([mingw_bin + 'dlltool', '-D', dll_name, '-d', def_name, '-l',
+                 dlla_name], env=env)
             print("Moving %s to %s" % (dlla_name, dlla_path), flush=True)
             shutil.move(dlla_name, dlla_path)
         finally:
