@@ -1,6 +1,6 @@
 environment:
   global:
-      MINGW_HOME: "C:\\mingw"
+      MINGW_HOME: "C:\\mingw-static"
       DOWNLOAD_FOLDER: "C:\\downloads"
   matrix:
     - PY_HOME: "C:\\Python27"
