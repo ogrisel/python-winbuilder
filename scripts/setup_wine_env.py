@@ -62,13 +62,18 @@ ISSUE_4709_PATCH = (
     ISSUE_4709_PATCH_AFTER
 )
 
+
 def run(command, *args, prepend_wine='auto', **kwargs):
     """Execute a windows command (using wine under Linux)"""
-    if ((prepend_wine == 'auto' and sys.prefix != 'win32')
+    if ((prepend_wine == 'auto' and sys.platform != 'win32')
             or prepend_wine is True):
         command = ['wine'] + command
-    print("=> " + " ".join(command))
-    return check_output(command, *args, stderr=sys.stdout, **kwargs)
+    # Use the windows shell under Windows to get the PATH-based command
+    # resolution. Under Linux, stick to wine and its fake registry.
+    shell = sys.platform == 'win32'
+    print("=> " + " ".join(command), flush=True)
+    return check_output(command, *args, stderr=sys.stdout, shell=shell,
+                        **kwargs)
 
 
 def unix_path(path, env=None):
@@ -89,7 +94,7 @@ def windows_path(path, env=None):
                env=env).decode('utf-8').strip()
 
 
-def set_env(attribute, value, env=None):
+def set_env(attribute, value, env):
     """Edit the wine registry to configure an environment variable"""
     print("Setting '%s'='%s'" % (attribute, value))
 
@@ -104,29 +109,38 @@ def set_env(attribute, value, env=None):
         f.write(b'\r\n')
 
     # Use regedit to load the new configuration
-    command = ['regedit', filename]
+    command = ['regedit', '/s', filename]
     run(command, env=env, prepend_wine=False)
 
-    # XXX [hackish]: Wait for regedit to apply those updates
-    print("Waiting for registry to get updated...")
-    if env is None or 'WINEPREFIX' not in env:
-        user_reg = op.expanduser(op.join('~', '.wine', 'user.reg'))
+    if sys.platform == 'win32':
+        # Modify the env of this process, but only under windows otherwise
+        # it breaks wine commands
+        env[attribute] = value
     else:
-        user_reg = op.join(env['WINEPREFIX'], 'user.reg')
-    for i in range(100):
-        if op.exists(user_reg):
-            with open(user_reg, 'rb') as f:
-                if value_ascii in f.read():
-                    print('registry updated')
-                    break
-        print('.', end='')
-        time.sleep(1)
+        # XXX [hackish]: Wait for regedit to apply those updates under wine
+        print("Waiting for registry to get updated...")
+        if env is None or 'WINEPREFIX' not in env:
+            user_reg = op.expanduser(op.join('~', '.wine', 'user.reg'))
+        else:
+            user_reg = op.join(env['WINEPREFIX'], 'user.reg')
+        for i in range(100):
+            if op.exists(user_reg):
+                with open(user_reg, 'rb') as f:
+                    if value_ascii in f.read():
+                        print('registry updated')
+                        break
+            print('.', end='', flush=True)
+            sys.stdout.flush()
+            time.sleep(1)
 
 
-def make_path(python_home, mingw_home):
+def make_path(python_home, mingw_home, env=None):
+    if env is None:
+        env = os.environ
+    path = env['PATH']
     python_path = "{python_home};{python_home}\\Scripts".format(**locals())
     mingw_path = "{mingw_home}\\bin".format(**locals())
-    return ";".join([python_path, mingw_path])
+    return ";".join([python_path, mingw_path, path])
 
 
 def download_python(version, arch, download_folder='.', env=None):
@@ -144,7 +158,7 @@ def download_python(version, arch, download_folder='.', env=None):
         os.makedirs(download_folder)
     filepath = op.join(download_folder, filename)
     if not op.exists(filepath):
-        print("Downloading %s to %s" % (url, filepath))
+        print("Downloading %s to %s" % (url, filepath), flush=True)
         urlretrieve(url, filepath)
     return filepath
 
@@ -166,7 +180,8 @@ def install_python(python_home, version, arch, download_folder='.', env=None):
         # Install pip
         getpip_filepath = op.join(download_folder, GET_PIP_SCRIPT)
         if not op.exists(getpip_filepath):
-            print("Downloading %s to %s" % (GET_PIP_URL, getpip_filepath))
+            print("Downloading %s to %s" % (GET_PIP_URL, getpip_filepath),
+                  flush=True)
             urlretrieve(GET_PIP_URL, getpip_filepath)
 
         getpip_filepath = windows_path(getpip_filepath, env=env)
@@ -180,7 +195,7 @@ def download_mingw(mingw_version="2014-11", arch="64", download_folder='.'):
         os.makedirs(download_folder)
     filepath = op.join(download_folder, filename)
     if not op.exists(filepath):
-        print("Downloading %s to %s" % (url, filepath))
+        print("Downloading %s to %s" % (url, filepath), flush=True)
         urlretrieve(url, filepath)
     return filepath
 
@@ -197,10 +212,10 @@ def install_mingw(mingw_home, mingw_version="2014-11", arch="64",
 
         tmp_mingw_folder = op.join(download_folder, 'mingw%sstatic' % arch)
         if not op.exists(tmp_mingw_folder):
-            print("Extracting %s..." % mingw_filepath)
+            print("Extracting %s..." % mingw_filepath, flush=True)
             with tarfile.open(mingw_filepath) as f:
                 f.extractall(download_folder)
-        print("Installing mingw to %s..." % mingw_home)
+        print("Installing mingw to %s..." % mingw_home, flush=True)
         shutil.move(tmp_mingw_folder, mingw_home_path)
 
 
@@ -222,7 +237,7 @@ def configure_mingw(mingw_home, python_home, python_version, arch, env=None):
             run(['gendef', dll_name], env=env)
             run(['dlltool', '-D', dll_name, '-d', def_name, '-l', dlla_name],
                 env=env)
-            print("Moving %s to %s" % (dlla_name, dlla_path))
+            print("Moving %s to %s" % (dlla_name, dlla_path), flush=True)
             shutil.move(dlla_name, dlla_path)
         finally:
             os.chdir(cwd_orig)
@@ -231,7 +246,8 @@ def configure_mingw(mingw_home, python_home, python_version, arch, env=None):
     # (useful for pip in particular)
     distutils_cfg = op.join(python_home_path, 'Lib', 'distutils',
                             'distutils.cfg')
-    print("Setting mingw as the default compiler in %s" % distutils_cfg)
+    print("Setting mingw as the default compiler in %s" % distutils_cfg,
+          flush=True)
     with open(distutils_cfg, 'w') as f:
         f.write(DISTUTILS_CFG_CONTENT)
 
@@ -249,7 +265,8 @@ def configure_mingw(mingw_home, python_home, python_version, arch, env=None):
     # Copy the msvc runtime library
     libmsvcr_path = op.join(mingw_home_path, arch_folder, 'lib', libmsvcr)
     libs_folder = op.join(python_home_path, 'libs')
-    print('Copying %s to %s' % (libmsvcr_path, libs_folder))
+    print('Copying %s to %s' % (libmsvcr_path, libs_folder),
+          flush=True)
     shutil.copy2(libmsvcr_path, libs_folder)
 
     # Configure the msvc runtime specs file
@@ -257,7 +274,8 @@ def configure_mingw(mingw_home, python_home, python_version, arch, env=None):
                            GCC_VERSION)
     specs_source_path = op.join(specs_folder, specs)
     specs_target_path = op.join(specs_folder, 'specs')
-    print('Copying %s to %s' % (specs_source_path, specs_target_path))
+    print('Copying %s to %s' % (specs_source_path, specs_target_path),
+          flush=True)
     shutil.copy2(specs_source_path, specs_target_path)
 
 
@@ -270,7 +288,8 @@ def fix_issue_4709(python_home, python_version, arch, env=None):
     pyconfig_filename = op.join(python_home_path, 'include', 'pyconfig.h')
 
     # Poor's man patching: move the #ifdef block to the correct location
-    print("Patching %s for issue 4709" % pyconfig_filename)
+    print("Patching %s for issue 4709" % pyconfig_filename,
+          flush=True)
     with open(pyconfig_filename, 'r') as f:
         pyconfig_content = f.read()
 
@@ -312,7 +331,7 @@ def setup_wine_env(python_home, python_version, python_arch,
                    download_folder=download_folder, env=env)
     install_mingw(mingw_home, arch=python_arch,
                   download_folder=download_folder, env=env)
-    set_env(u'PATH', make_path(python_home, mingw_home), env=env)
+    set_env(u'PATH', make_path(python_home, mingw_home, env=env), env=env)
     configure_mingw(mingw_home, python_home, python_version, python_arch,
                     env=env)
     fix_issue_4709(python_home, python_version, python_arch, env=env)
