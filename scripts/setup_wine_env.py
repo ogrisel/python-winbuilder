@@ -229,16 +229,18 @@ def configure_mingw(mingw_home, python_home, python_version, arch, env=None):
         dll_name = 'python%d%d.dll' % (v_major, v_minor)
         def_name = 'python%d%d.def' % (v_major, v_minor)
 
+        # Look for the Python dll in the Python folder.
         dll_win_path = python_home + '\\' + dll_name
         if not op.exists(unix_path(dll_win_path, env=env)):
-            print(python_home_path, flush=True)
-            print(os.listdir(python_home_path), flush=True)
-            system_path = unix_path("C:\windows\system32", env=env)
-            print(system_path, flush=True)
-            print(os.listdir(system_path), flush=True)
-            system_path = unix_path("C:\windows\syswow64", env=env)
-            print(system_path, flush=True)
-            print(os.listdir(system_path), flush=True)
+            print('Python dll not found in %s' % dll_win_path)
+
+            # Look for a copy of the Python dll installed in the system folder:
+            if arch == '32':
+                dll_win_path = 'C:\\windows\\system32\\' + dll_name
+            else:
+                dll_win_path = 'C:\\windows\\syswow64\\' + dll_name
+
+        if not op.exists(unix_path(dll_win_path, env=env)):
             raise RuntimeError("Could not find %s" % dll_win_path)
 
         run([mingw_bin + 'gendef', dll_win_path], env=env)
