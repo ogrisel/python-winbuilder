@@ -302,20 +302,22 @@ def fix_issue_4709(python_home, python_version, arch, env=None):
     with open(pyconfig_filename, 'r') as f:
         pyconfig_content = f.read()
 
-    if ISSUE_4709_PATCH_MIDDLE not in pyconfig_content:
-        print("Content of %s:" % pyconfig_filename)
-        print(pyconfig_content, flush=True)
-        raise RuntimeError("Could not find old definition for issue 4709")
     removed = pyconfig_content.replace(ISSUE_4709_PATCH_MIDDLE, '')
     insert_location = ISSUE_4709_PATCH_BEFORE + ISSUE_4709_PATCH_AFTER
     patched = removed.replace(insert_location, ISSUE_4709_PATCH)
-    if patched == removed:
-        print("Content of %s:" % pyconfig_filename)
-        print(pyconfig_content, flush=True)
-        raise RuntimeError("Failed to patch issue 4709")
 
     with open(pyconfig_filename, 'w') as f:
         f.write(patched)
+
+    print("Original content of %s:" % pyconfig_filename)
+    print("=" * 80, flush=True)
+    print(pyconfig_content, flush=True)
+    print("=" * 80, flush=True)
+
+    print("Patched content of %s:" % pyconfig_filename)
+    print("=" * 80, flush=True)
+    print(patched, flush=True)
+    print("=" * 80, flush=True)
 
 
 def make_wine_env(python_version, python_arch, wine_prefix_root=None):

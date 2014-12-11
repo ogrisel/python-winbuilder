@@ -50,8 +50,4 @@ test_script:
   - "pip install cython"
 
 cache:
-  - "C:\\downloads"
-
-artifacts:
-  # XXX: debug
-  - path: "C:\\*\\include\\pyconfig.h"
+  - C:\downloads
