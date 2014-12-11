@@ -170,17 +170,17 @@ def install_python(python_home, version, arch, download_folder='.', env=None):
                    '/log', 'msi_install.log', 'TARGETDIR=%s' % python_home]
         run(command, env=env)
 
-        # Install pip
-        if not op.exists(download_folder):
-            os.makedirs(download_folder)
-        getpip_filepath = op.join(download_folder, GET_PIP_SCRIPT)
-        if not op.exists(getpip_filepath):
-            print("Downloading %s to %s" % (GET_PIP_URL, getpip_filepath),
-                  flush=True)
-            urlretrieve(GET_PIP_URL, getpip_filepath)
+    # Install / upgrade pip
+    if not op.exists(download_folder):
+        os.makedirs(download_folder)
+    getpip_filepath = op.join(download_folder, GET_PIP_SCRIPT)
+    if not op.exists(getpip_filepath):
+        print("Downloading %s to %s" % (GET_PIP_URL, getpip_filepath),
+              flush=True)
+        urlretrieve(GET_PIP_URL, getpip_filepath)
 
-        getpip_filepath = windows_path(getpip_filepath, env=env)
-        run([python_home + '\\python', getpip_filepath], env=env)
+    getpip_filepath = windows_path(getpip_filepath, env=env)
+    run([python_home + '\\python', getpip_filepath], env=env)
 
 
 def download_mingw(mingw_version="2014-11", arch="64", download_folder='.'):
