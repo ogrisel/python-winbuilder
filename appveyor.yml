@@ -54,4 +54,4 @@ cache:
 
 artifacts:
   # XXX: debug
-  - path: 'C:\\Python*\\include\\pyconfig.h'
+  - path: "C:\\*\\include\\pyconfig.h"
