@@ -218,7 +218,6 @@ def configure_mingw(mingw_home, python_home, python_version, arch, env=None):
     mingw_home_path = unix_path(mingw_home, env=env)
     python_home_path = unix_path(python_home, env=env)
     v_major, v_minor = tuple(int(x) for x in python_version.split('.')[:2])
-    cwd_orig = os.getcwd()
 
     mingw_bin = mingw_home + "\\bin\\"
 
@@ -229,15 +228,24 @@ def configure_mingw(mingw_home, python_home, python_version, arch, env=None):
         print('Generating %s from %s' % (dlla_name, python_home))
         dll_name = 'python%d%d.dll' % (v_major, v_minor)
         def_name = 'python%d%d.def' % (v_major, v_minor)
-        try:
-            os.chdir(python_home_path)
-            run([mingw_bin + 'gendef', dll_name], env=env)
-            run([mingw_bin + 'dlltool', '-D', dll_name, '-d', def_name, '-l',
-                 dlla_name], env=env)
-            print("Moving %s to %s" % (dlla_name, dlla_path), flush=True)
-            shutil.move(dlla_name, dlla_path)
-        finally:
-            os.chdir(cwd_orig)
+
+        dll_win_path = python_home + '\\' + dll_name
+        if not op.exists(unix_path(dll_win_path, env=env)):
+            print(python_home_path, flush=True)
+            print(os.listdir(python_home_path), flush=True)
+            system_path = unix_path("C:\windows\system32", env=env)
+            print(system_path, flush=True)
+            print(os.listdir(system_path), flush=True)
+            system_path = unix_path("C:\windows\syswow64", env=env)
+            print(system_path, flush=True)
+            print(os.listdir(system_path), flush=True)
+            raise RuntimeError("Could not find %s" % dll_win_path)
+
+        run([mingw_bin + 'gendef', dll_win_path], env=env)
+        run([mingw_bin + 'dlltool', '-D', dll_name, '-d', def_name, '-l',
+             dlla_name], env=env)
+        print("Moving %s to %s" % (dlla_name, dlla_path), flush=True)
+        shutil.move(dlla_name, dlla_path)
 
     # Install a disutils.cfg file to select mingw as the default compiler
     # (useful for pip in particular)
