@@ -181,6 +181,7 @@ def install_python(python_home, version, arch, download_folder='.', env=None):
 
     getpip_filepath = windows_path(getpip_filepath, env=env)
     run([python_home + '\\python', getpip_filepath], env=env)
+    run([python_home + '\\python', '-m', 'pip', '--upgrade'. 'pip'], env=env)
 
 
 def download_mingw(mingw_version="2014-11", arch="64", download_folder='.'):
@@ -300,9 +301,17 @@ def fix_issue_4709(python_home, python_version, arch, env=None):
     with open(pyconfig_filename, 'r') as f:
         pyconfig_content = f.read()
 
-    patched = pyconfig_content.replace(ISSUE_4709_PATCH_MIDDLE, '')
+    if ISSUE_4709_PATCH_MIDDLE not in pyconfig_content:
+        print("Content of %s:" % pyconfig_filename)
+        print(pyconfig_content, flush=True)
+        raise RuntimeError("Could not find old definition for issue 4709")
+    removed = pyconfig_content.replace(ISSUE_4709_PATCH_MIDDLE, '')
     insert_location = ISSUE_4709_PATCH_BEFORE + ISSUE_4709_PATCH_AFTER
-    patched = patched.replace(insert_location, ISSUE_4709_PATCH)
+    patched = removed.replace(insert_location, ISSUE_4709_PATCH)
+    if patched == removed:
+        print("Content of %s:" % pyconfig_filename)
+        print(pyconfig_content, flush=True)
+        raise RuntimeError("Failed to patch issue 4709")
 
     with open(pyconfig_filename, 'w') as f:
         f.write(patched)

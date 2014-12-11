@@ -51,3 +51,7 @@ test_script:
 
 cache:
   - "C:\\downloads"
+
+artifacts:
+  # XXX: debug
+  - path: C:\Python*\include\pyconfig.h
