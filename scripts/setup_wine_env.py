@@ -181,7 +181,8 @@ def install_python(python_home, version, arch, download_folder='.', env=None):
 
     getpip_filepath = windows_path(getpip_filepath, env=env)
     run([python_home + '\\python', getpip_filepath], env=env)
-    run([python_home + '\\python', '-m', 'pip', '--upgrade'. 'pip'], env=env)
+    run([python_home + '\\python', '-m', 'pip', 'install', '--upgrade',
+        'pip'], env=env)
 
 
 def download_mingw(mingw_version="2014-11", arch="64", download_folder='.'):
