@@ -220,8 +220,8 @@ def configure_mingw(mingw_home, python_home, python_version, arch, env=None):
             raise RuntimeError("Could not find %s" % dll_win_path)
 
         run([mingw_bin + 'gendef', dll_win_path], env=env)
-        run([mingw_bin + 'dlltool', '-D', dll_name, '-d', def_name, '-l',
-             dlla_name], env=env)
+        run([mingw_bin + 'dlltool', '-D', dll_win_path, '-d', def_name, '-l',
+            dlla_name], env=env)
         print("Moving %s to %s" % (dlla_name, dlla_path), flush=True)
         shutil.move(dlla_name, dlla_path)
 
