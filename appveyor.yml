@@ -51,8 +51,3 @@ test_script:
 
 cache:
   - "C:\\downloads"
-
-after_test:
-  # If tests are successful, create a whl package for the project.
-  - "%CMD_IN_ENV% python setup.py bdist_wheel bdist_wininst"
-  - ps: "ls dist"
