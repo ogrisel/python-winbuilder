@@ -37,7 +37,7 @@ build: false  # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # Set the PATH manually for subsequent CMD commands
-  - "set PATH=%PY_HOME%;%PY_HOME%\\Scripts;%MINGW_HOME\\bin;%PATH%"
+  - "set PATH=%PY_HOME%;%PY_HOME%\\Scripts;%MINGW_HOME%\\bin;%PATH%"
 
   # Python should be in the PATH
   - "python --version"
