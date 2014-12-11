@@ -30,6 +30,12 @@ DISTUTILS_CFG_CONTENT = u"""\
 compiler=mingw32
 """
 
+DISTUTILS_CFG_ISSUE_4970_CONTENT = u"""\
+
+[build_ext]
+define=MS_WIN64
+"""
+
 ISSUE_4709_PATCH_BEFORE = u"""\
 #define environ (NULL)
 #endif
@@ -293,7 +299,15 @@ def fix_issue_4709(python_home, python_version, arch, env=None):
     if arch == "32" or python_version.startswith('3.'):
         # Nothing to do
         return
+
     python_home_path = unix_path(python_home, env=env)
+    distutils_cfg = op.join(python_home_path, 'Lib', 'distutils',
+                            'distutils.cfg')
+    print("Setting mingw as the default compiler in %s" % distutils_cfg,
+          flush=True)
+    with open(distutils_cfg, 'a') as f:
+        f.write(DISTUTILS_CFG_ISSUE_4970_CONTENT)
+
     pyconfig_filename = op.join(python_home_path, 'include', 'pyconfig.h')
 
     # Poor's man patching: move the #ifdef block to the correct location
