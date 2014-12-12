@@ -47,7 +47,7 @@ test_script:
 
   # Build a project that has a bunch of compiled extensions: the mingw compiler
   # should be used
-  - "pip install cython"
+  - "pip install tornado"
 
 cache:
   - C:\downloads
