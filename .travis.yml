@@ -27,4 +27,12 @@ after_success:
 cache:
     apt: true
     directories:
-        - $DOWNLOAD_FOLDER
+        - $DOWNLOAD_FOLDER/get-pip.py
+        - $DOWNLOAD_FOLDER/mingw32static-2014-11.tar.xz
+        - $DOWNLOAD_FOLDER/mingw64static-2014-11.tar.xz
+        - $DOWNLOAD_FOLDER/python-2.7.8.msi
+        - $DOWNLOAD_FOLDER/python-2.7.8.amd64.msi
+        - $DOWNLOAD_FOLDER/python-3.3.5.msi
+        - $DOWNLOAD_FOLDER/python-3.3.5.amd64.msi
+        - $DOWNLOAD_FOLDER/python-3.4.2.msi
+        - $DOWNLOAD_FOLDER/python-3.4.2.amd64.msi

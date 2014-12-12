@@ -50,4 +50,6 @@ test_script:
   - "pip install tornado"
 
 cache:
-  - C:\downloads
+  - C:\downloads\get-pip.py
+  - C:\downloads\mingw32static-2014-11.tar.xz
+  - C:\downloads\mingw64static-2014-11.tar.xz
