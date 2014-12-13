@@ -1,4 +1,9 @@
 language: python
+cache:
+  apt: true
+  directories:
+    - $HOME/.pip-cache
+    - $DOWNLOAD_FOLDER
 python:
     - "3.4"
 env:
@@ -21,18 +26,6 @@ script:
     - wine python --version
     - wine gcc --version
     # Check that the mingw compiler is used by default to build extensions
-    - wine python -m pip install tornado
+    - wine python -m pip install --download-cache $HOME/.pip-cache tornado
 after_success:
     - du -hs $DOWNLOAD_FOLDER/*
-cache:
-    apt: true
-    directories:
-        - $DOWNLOAD_FOLDER/get-pip.py
-        - $DOWNLOAD_FOLDER/mingw32static-2014-11.tar.xz
-        - $DOWNLOAD_FOLDER/mingw64static-2014-11.tar.xz
-        - $DOWNLOAD_FOLDER/python-2.7.8.msi
-        - $DOWNLOAD_FOLDER/python-2.7.8.amd64.msi
-        - $DOWNLOAD_FOLDER/python-3.3.5.msi
-        - $DOWNLOAD_FOLDER/python-3.3.5.amd64.msi
-        - $DOWNLOAD_FOLDER/python-3.4.2.msi
-        - $DOWNLOAD_FOLDER/python-3.4.2.amd64.msi

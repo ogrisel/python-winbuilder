@@ -47,9 +47,10 @@ test_script:
 
   # Build a project that has a bunch of compiled extensions: the mingw compiler
   # should be used
-  - "pip install tornado"
+  - "pip install --download-cache C:\\pip-cache tornado"
 
 cache:
   - C:\downloads\get-pip.py
   - C:\downloads\mingw32static-2014-11.tar.xz
   - C:\downloads\mingw64static-2014-11.tar.xz
+  - C:\pip-cache
