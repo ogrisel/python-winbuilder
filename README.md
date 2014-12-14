@@ -62,7 +62,7 @@ testing your own code as usual:
     pip install nose
     nosetests .
 
-See the [appveyor.yml](appveyor.yml) for a more complete example.
+See the [appveyor.yml](appveyor.yml) file for a more complete example.
 
 
 Linux usage
@@ -76,7 +76,7 @@ This requires wine 1.6+:
     export MINGW_HOME="C:\\mingw-static"
     python -m pywinbuilder
 
-See the [.travis.yml](.travis.yml) for a more complete example.
+See the [.travis.yml](.travis.yml) file for a more complete example.
 
 It is also possible to pass a custom `WINEPREFIX` environment variable to
 isolate several build environment for different versions of Python and
