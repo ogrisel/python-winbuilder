@@ -8,7 +8,7 @@ MAINTAINER = 'Olivier Grisel'
 MAINTAINER_EMAIL = 'olivier.grisel@ensta.org'
 URL = 'http://github.com/ogrisel/python-winbuilder'
 LICENSE = 'MIT'
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 setup(
     name=DISTNAME,
