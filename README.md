@@ -70,11 +70,11 @@ Linux usage
 
 This requires wine 1.6+:
 
-   export PYTHON_HOME="C:\\Python34-x64"
-   export PYTHON_VERSION="3.4.2"
-   export ARCH="64"
-   export MINGW_HOME="C:\\mingw-static"
-   python -m pywinbuilder
+    export PYTHON_HOME="C:\\Python34-x64"
+    export PYTHON_VERSION="3.4.2"
+    export ARCH="64"
+    export MINGW_HOME="C:\\mingw-static"
+    python -m pywinbuilder
 
 See the [.travis.yml](.travis.yml) for a more complete example.
 
