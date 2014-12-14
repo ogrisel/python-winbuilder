@@ -9,23 +9,25 @@ python:
 env:
   global:
     - DOWNLOAD_FOLDER="$HOME/downloads"
+    - MINGW_HOME="C:\\mingw"
   matrix:
-    - PY_HOME="C:\\Python27" PY_VERSION="2.7.8" ARCH="32" MINGW_HOME="C:\\mingw"
-    - PY_HOME="C:\\Python33" PY_VERSION="3.3.5" ARCH="32" MINGW_HOME="C:\\mingw"
-    - PY_HOME="C:\\Python34" PY_VERSION="3.4.2" ARCH="32" MINGW_HOME="C:\\mingw"
-    - PY_HOME="C:\\Python27" PY_VERSION="2.7.8" ARCH="64" MINGW_HOME="C:\\mingw"
-    - PY_HOME="C:\\Python33" PY_VERSION="3.3.5" ARCH="64" MINGW_HOME="C:\\mingw"
-    - PY_HOME="C:\\Python34" PY_VERSION="3.4.2" ARCH="64" MINGW_HOME="C:\\mingw"
+    - PYTHON_HOME="C:\\Python27" PYTHON_VERSION="2.7.8" ARCH="32"
+    - PYTHON_HOME="C:\\Python33" PYTHON_VERSION="3.3.5" ARCH="32"
+    - PYTHON_HOME="C:\\Python34" PYTHON_VERSION="3.4.2" ARCH="32"
+    - PYTHON_HOME="C:\\Python27" PYTHON_VERSION="2.7.8" ARCH="64"
+    - PYTHON_HOME="C:\\Python33" PYTHON_VERSION="3.3.5" ARCH="64"
+    - PYTHON_HOME="C:\\Python34" PYTHON_VERSION="3.4.2" ARCH="64"
 install:
     - sudo add-apt-repository ppa:ubuntu-wine/ppa -y
     - sudo apt-get update -y -qq
     - sudo apt-get install -y wine
     - mkdir -p $DOWNLOAD_FOLDER
-    - python3.4 scripts/setup_wine_env.py
+    - python3.4 pywinbuilder.py
 script:
     - wine python --version
     - wine gcc --version
     # Check that the mingw compiler is used by default to build extensions
     - wine python -m pip install --download-cache $HOME/.pip-cache tornado
 after_success:
+    # To introspect travis caching behavior (it does not seem to work at all)
     - du -hs $DOWNLOAD_FOLDER/*

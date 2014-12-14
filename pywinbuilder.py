@@ -1,3 +1,6 @@
+"""Utilities to setup a mingw based build setup for Python projects."""
+# Author: Olivier Grisel <olivier.grisel@ensta.org>
+# License: MIT
 from __future__ import print_function
 import os.path as op
 import os
@@ -298,7 +301,7 @@ def make_wine_env(python_version, python_arch, wine_prefix_root=None):
     return env
 
 
-def setup_wine_env(python_home, python_version, python_arch,
+def setup_wine_env(python_home, python_version, python_arch, mingw_home,
                    wine_prefix_root=None, download_folder='downloads'):
     env = make_wine_env(python_version, python_arch,
                         wine_prefix_root=wine_prefix_root)
@@ -308,9 +311,11 @@ def setup_wine_env(python_home, python_version, python_arch,
                   download_folder=download_folder, env=env)
     custom_path = make_path(python_home, mingw_home)
     if sys.platform == 'win32':
+        # Under Windows, prepend the existing PATH with the new folders in
+        # in the current process environment
         env['PATH'] = custom_path + ";" + env['PATH']
     else:
-        # Under wine: use the registry
+        # Under wine: use the registry to setup the path
         set_env_in_registry(u'PATH', custom_path, env=env)
     configure_mingw(mingw_home, python_home, python_version, python_arch,
                     env=env)
@@ -320,32 +325,39 @@ def setup_wine_env(python_home, python_version, python_arch,
     run(['gcc', '--version'], env=env)
 
 
+def setup_configure_from_yaml(config_filename):
+    import yaml
+    with open(config_filename) as f:
+        config = yaml.load(f)
+    wine_prefix_root = config.get('wine_prefix_root', 'wine')
+    environments = config.get('matrix', ())
+    for environment in environments:
+        python_home = environment['python_home']
+        python_version = environment['python_version']
+        python_arch = environment['python_arch']
+        mingw_home = environment['mingw_home']
+        setup_wine_env(python_home, python_version, python_arch, mingw_home,
+                       wine_prefix_root=wine_prefix_root,
+                       download_folder=wine_prefix_root)
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         # Setup one isolated WINEPREFIX install per configuration
         # provided in a YAML formatted specification.
-        import yaml
-        with open(sys.argv[1]) as f:
-            config = yaml.load(f)
-        wine_prefix_root = config.get('wine_prefix_root', 'wine')
-        environments = config.get('environments', ())
-        for environment in environments:
-            python_home = environment['python_home']
-            python_version = environment['python_version']
-            python_arch = environment['python_arch']
-            mingw_home = environment['mingw_home']
-            setup_wine_env(python_home, python_version, python_arch,
-                           wine_prefix_root=wine_prefix_root,
-                           download_folder=wine_prefix_root)
-
+        setup_configure_from_yaml(sys.argv[1])
     else:
         # Perform one setup using environment variables. The WINEPREFIX
         # environment variable should be defined externally if needed.
-        python_home = os.environ['PY_HOME']
-        python_version = os.environ['PY_VERSION']
-        python_arch = os.environ['ARCH']
-        mingw_home = os.environ.get('MINGW_HOME', 'C:\\mingw')
+        try:
+            python_home = os.environ['PYTHON_HOME']
+            python_version = os.environ['PYTHON_VERSION']
+            python_arch = os.environ['ARCH']
+        except KeyError as e:
+            print("pywinbuilder require configuration as"
+                  " environment variable: %s" % e)
+            sys.exit(1)
+        mingw_home = os.environ.get('MINGW_HOME', 'C:\\mingw-static')
         download_folder = os.environ.get('DOWNLOAD_FOLDER', '.')
-
-        setup_wine_env(python_home, python_version, python_arch,
+        setup_wine_env(python_home, python_version, python_arch, mingw_home,
                        download_folder=download_folder)

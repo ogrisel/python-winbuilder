@@ -3,41 +3,41 @@ environment:
       MINGW_HOME: "C:\\mingw-static"
       DOWNLOAD_FOLDER: "C:\\downloads"
   matrix:
-    - PY_HOME: "C:\\Python27"
-      PY_VERSION: "2.7.8"
+    - PYTHON_HOME: "C:\\Python27"
+      PYTHON_VERSION: "2.7.8"
       ARCH: "32"
 
-    - PY_HOME: "C:\\Python27-x64"
-      PY_VERSION: "2.7.8"
+    - PYTHON_HOME: "C:\\Python27-x64"
+      PYTHON_VERSION: "2.7.8"
       ARCH: "64"
 
-    - PY_HOME: "C:\\Python33"
-      PY_VERSION: "3.3.5"
+    - PYTHON_HOME: "C:\\Python33"
+      PYTHON_VERSION: "3.3.5"
       ARCH: "32"
 
-    - PY_HOME: "C:\\Python33-x64"
-      PY_VERSION: "3.3.5"
+    - PYTHON_HOME: "C:\\Python33-x64"
+      PYTHON_VERSION: "3.3.5"
       ARCH: "64"
 
-    - PY_HOME: "C:\\Python34"
-      PY_VERSION: "3.4.2"
+    - PYTHON_HOME: "C:\\Python34"
+      PYTHON_VERSION: "3.4.2"
       ARCH: "32"
 
-    - PY_HOME: "C:\\Python34-x64"
-      PY_VERSION: "3.4.2"
+    - PYTHON_HOME: "C:\\Python34-x64"
+      PYTHON_VERSION: "3.4.2"
       ARCH: "64"
 
 install:
   # Install the build environment with a script that uses the environment
   # variables: we use a Python 3.4 to run the script as it needs to uncompress
-  # .tar.xv archives which is not supported in Python 2.7.
-  - "C:\\Python34-x64\\python .\\scripts\\setup_wine_env.py"
+  # .tar.xv archives which is not supported in Python 2.
+  - "C:\\Python34-x64\\python pywinbuilder.py"
 
 build: false  # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # Set the PATH manually for subsequent CMD commands
-  - "set PATH=%PY_HOME%;%PY_HOME%\\Scripts;%MINGW_HOME%\\bin;%PATH%"
+  - "set PATH=%PYTHON_HOME%;%PYTHON_HOME%\\Scripts;%MINGW_HOME%\\bin;%PATH%"
 
   # Python should be in the PATH
   - "python --version"

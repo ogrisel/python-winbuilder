@@ -6,21 +6,19 @@ MAINTAINER Olivier Grisel <olivier.grisel@ensta.org>
 WORKDIR /root
 USER root
 
+# Install wine with 32 bit support
 RUN dpkg --add-architecture i386
-RUN apt-get update -y -qq
-RUN apt-get install -y software-properties-common
-RUN add-apt-repository -y ppa:fkrull/deadsnakes
-RUN apt-get update -y -qq
-RUN apt-get install -y python2.7-dev python3.3-dev python3.4-dev
-RUN apt-get install -y curl
+RUN apt-get update -y -qq && apt-get install -y wine
+
+# Install python 3.4 and pyyaml to run the main setup script
+RUN apt-get install -y python3.4 curl
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3.4
 RUN python3.4 -m pip install pyyaml
 
-RUN apt-get install -y wine
-
-ADD scripts/setup_wine_env.py /root/setup_wine_env.py
-ADD python_winbuilder.yml /root/python_winbuilder.yml
-RUN python3.4 setup_wine_env.py python_winbuilder.yml
+# Build the wine-based build environments
+ADD pywinbuilder.py /root/pywinbuilder.py
+ADD pywinbuilder.yml /root/pywinbuilder.yml
+RUN python3.4 pywinbuilder.py pywinbuilder.yml
 
 # Convenience: enable last wine prefix as the default
 RUN ln -s /wine/wine-py3.4.2-64 $HOME/.wine
