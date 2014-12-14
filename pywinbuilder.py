@@ -13,7 +13,7 @@ try:
     from urllib.request import urlretrieve
 except ImportError:
     # Python 2 compat
-    from urllib2 import urlretrieve
+    from urllib import urlretrieve
 
 WINEPREFIX_PATTERN = 'wine-py{version}-{arch}'
 PYTHON_MSI_PATTERN = "python-{version}{arch_marker}.msi"
@@ -26,7 +26,7 @@ MINGW_FILE_PATTERN = "mingw{arch}static-{version}.tar.xz"
 MINGW_URL_PATTERN = ("https://bitbucket.org/carlkl/mingw-w64-for-python/"
                      "downloads/" + MINGW_FILE_PATTERN)
 
-ENV_REGISTRY_KEY = rb"[HKEY_CURRENT_USER\Environment]"
+ENV_REGISTRY_KEY = b"[HKEY_CURRENT_USER\\Environment]"
 
 DISTUTILS_CFG_CONTENT = u"""\
 [build]
@@ -40,7 +40,7 @@ define=MS_WIN64
 """
 
 
-def run(command, *args, prepend_wine='auto', **kwargs):
+def run(command, prepend_wine='auto', *args, **kwargs):
     """Execute a windows command (using wine under Linux)"""
     if ((prepend_wine == 'auto' and sys.platform != 'win32')
             or prepend_wine is True):
