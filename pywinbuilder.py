@@ -336,9 +336,10 @@ def setup_configure_from_yaml(config_filename):
         python_version = environment['python_version']
         python_arch = environment['python_arch']
         mingw_home = environment['mingw_home']
+        download_folder = environment.get('DOWNLOAD_FOLDER', '.')
         setup_wine_env(python_home, python_version, python_arch, mingw_home,
                        wine_prefix_root=wine_prefix_root,
-                       download_folder=wine_prefix_root)
+                       download_folder=download_folder)
 
 
 if __name__ == "__main__":
