@@ -52,3 +52,10 @@ docs/_build/
 
 # PyBuilder
 target/
+
+mingw32static-2014-11.tar.xz
+mingw64static-2014-11.tar.xz
+*.reg
+get-pip.py
+python*.def
+python*.msi
