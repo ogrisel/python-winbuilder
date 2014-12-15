@@ -3,7 +3,12 @@ cache:
   apt: true
   directories:
     - $HOME/.pip-cache
-    - $DOWNLOAD_FOLDER
+    - $HOME/downloads/32/2.7.8
+    - $HOME/downloads/32/3.3.5
+    - $HOME/downloads/32/3.4.2
+    - $HOME/downloads/64/2.7.8
+    - $HOME/downloads/64/3.3.5
+    - $HOME/downloads/64/3.4.2
 python:
     - "3.4"
 env:
@@ -21,13 +26,13 @@ install:
     - sudo add-apt-repository ppa:ubuntu-wine/ppa -y
     - sudo apt-get update -y -qq
     - sudo apt-get install -y wine
-    - mkdir -p $DOWNLOAD_FOLDER
+    - export DOWNLOAD_FOLDER=$HOME/downloads/$ARCH/$PYTHON_VERSION
     - python3.4 pywinbuilder.py
 script:
     - wine python --version
     - wine gcc --version
     # Check that the mingw compiler is used by default to build extensions
-    - wine python -m pip install --download-cache $HOME/.pip-cache tornado
+    - wine python -m pip install --download-cache .pip-cache tornado
 after_success:
     # To introspect travis caching behavior (it does not seem to work at all)
     - du -hs $DOWNLOAD_FOLDER/*
